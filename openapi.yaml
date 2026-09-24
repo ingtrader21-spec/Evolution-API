@@ -16,11 +16,24 @@ paths:
     get:
       responses:
         "200": { description: Provider configuration status }
+  /internal/v1/whatsapp/transport/messages/{provider_message_id}:
+    get:
+      description: Internal provider message readback for Middleware V3.
+      parameters:
+        - in: path
+          name: provider_message_id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Normalized provider state }
+        "401": { description: Service authentication failed }
+        "404": { description: Provider message not found }
   /internal/v1/whatsapp/transport/messages:
     post:
       description: Internal Middleware-to-provider translation. External send is disabled by default.
       responses:
         "202": { description: Provider accepted }
+        "401": { description: Service authentication failed }
         "423": { description: Provider effects disabled }
   /internal/v1/whatsapp/webhooks/evolution:
     post:

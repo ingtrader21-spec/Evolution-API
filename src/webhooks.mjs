@@ -22,6 +22,7 @@ export function normalizeEvolutionWebhook(body) {
   return {
     source: "evolution",
     provider_event_id: providerEventId,
+    provider_message_id: providerEventId,
     event_type: body?.event ?? "provider.event",
     instance_id: body?.instance ?? body?.instanceName ?? null,
     occurred_at: body?.date_time ?? body?.timestamp ?? null,
@@ -36,6 +37,7 @@ export function normalizeMetaWebhook(body) {
   return {
     source: "meta",
     provider_event_id: message?.id ?? status?.id ?? null,
+    provider_message_id: message?.id ?? status?.id ?? null,
     event_type: message ? "message.received" : status ? "message.delivery.updated" : "provider.event",
     instance_id: value?.metadata?.phone_number_id ?? null,
     occurred_at: message?.timestamp ?? status?.timestamp ?? null,

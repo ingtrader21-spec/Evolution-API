@@ -5,6 +5,7 @@ import { createEvolutionProvider } from "./providers/evolution.mjs";
 import { createMetaProvider } from "./providers/meta.mjs";
 import { forwardEvent } from "./middleware.mjs";
 import { normalizeEvolutionWebhook, normalizeMetaWebhook, verifyMetaSignature, verifySharedSecret } from "./webhooks.mjs";
+import { createMessageState } from "./state.mjs";
 
 const MAX_BODY = 1024 * 1024;
 
@@ -25,6 +26,7 @@ function json(res, status, body, headers = {}) {
 }
 
 export function createApp(customConfig = loadConfig()) {
+  const state = createMessageState();
   const providers = {
     evolution: createEvolutionProvider(customConfig),
     meta: createMetaProvider(customConfig)
@@ -62,6 +64,8 @@ export function createApp(customConfig = loadConfig()) {
       }
 
       if (req.method === "POST" && url.pathname === "/internal/v1/whatsapp/transport/messages") {
+        const authError = internalAuthError(req, customConfig);
+        if (authError) return json(res, authError.status, { error: { code: authError.code } });
         const raw = await readBody(req);
         const body = JSON.parse(raw.toString("utf8") || "{}");
         requireString(body.command_id, "command_id");
@@ -77,6 +81,7 @@ export function createApp(customConfig = loadConfig()) {
         const provider = providers[providerName];
         if (!provider) throw new ProviderError("unknown_provider", `unknown provider: ${providerName}`, { status: 400, retryHint: "never" });
         const result = await provider.send(body);
+        state.rememberAccepted(result);
         return json(res, 202, {
           command_id: body.command_id,
           correlation_id: body.correlation_id,
@@ -85,12 +90,22 @@ export function createApp(customConfig = loadConfig()) {
         });
       }
 
+      if (req.method === "GET" && url.pathname.startsWith("/internal/v1/whatsapp/transport/messages/")) {
+        const authError = internalAuthError(req, customConfig);
+        if (authError) return json(res, authError.status, { error: { code: authError.code } });
+        const id = decodeURIComponent(url.pathname.slice("/internal/v1/whatsapp/transport/messages/".length));
+        const record = state.get(id);
+        if (!record) return json(res, 404, { error: { code: "provider_message_not_found" } });
+        return json(res, 200, record);
+      }
+
       if (req.method === "POST" && url.pathname === "/internal/v1/whatsapp/webhooks/evolution") {
         const raw = await readBody(req);
         if (!verifySharedSecret(customConfig.evolutionWebhookSecret, req.headers["x-codestra-webhook-secret"])) {
           return json(res, 401, { error: { code: "invalid_webhook_secret" } });
         }
         const event = normalizeEvolutionWebhook(JSON.parse(raw.toString("utf8") || "{}"));
+        state.applyEvent(event);
         const forward = await forwardEvent(customConfig, event, correlationId);
         return json(res, 202, { accepted: true, event, forward });
       }
@@ -112,6 +127,7 @@ export function createApp(customConfig = loadConfig()) {
           return json(res, 401, { error: { code: "invalid_meta_signature" } });
         }
         const event = normalizeMetaWebhook(JSON.parse(raw.toString("utf8") || "{}"));
+        state.applyEvent(event);
         const forward = await forwardEvent(customConfig, event, correlationId);
         return json(res, 202, { accepted: true, event, forward });
       }
@@ -129,6 +145,15 @@ export function createApp(customConfig = loadConfig()) {
       });
     }
   });
+}
+
+function internalAuthError(req, config) {
+  if (!config.adapterServiceToken) return { status: 503, code: "service_auth_not_configured" };
+  const authorization = String(req.headers.authorization || "");
+  if (!authorization.startsWith("Bearer ")) return { status: 401, code: "service_auth_required" };
+  const actual = authorization.slice("Bearer ".length);
+  if (!verifySharedSecret(config.adapterServiceToken, actual)) return { status: 401, code: "service_auth_invalid" };
+  return null;
 }
 
 function cryptoRandom() {

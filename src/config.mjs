@@ -11,6 +11,7 @@ export function loadConfig(env = process.env) {
     middlewareBaseUrl: env.MIDDLEWARE_BASE_URL || "http://middleware-integration-api:8095",
     middlewareEventUrl: env.MIDDLEWARE_EVENT_URL || "",
     middlewareServiceToken: env.MIDDLEWARE_SERVICE_TOKEN || "",
+    adapterServiceToken: env.ADAPTER_SERVICE_TOKEN || "",
     evolutionBaseUrl: env.EVOLUTION_BASE_URL || "",
     evolutionApiKey: env.EVOLUTION_API_KEY || "",
     evolutionWebhookSecret: env.EVOLUTION_WEBHOOK_SECRET || "",
