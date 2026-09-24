@@ -1,17 +1,32 @@
-# Codestra Evolution API
+﻿# Codestra Evolution Adapter
 
-Messaging transport and provider gateway.
+Thin WhatsApp provider adapter behind **Middleware V3 :8095**.
 
-## Codestra repository contract
+## Authority boundary
 
-This repository is an independent Codestra delivery unit. Do not mix implementation from sibling repositories. Cross-repository integration is performed through versioned APIs/events and tracked as linked dependencies.
+Middleware V3 owns command lifecycle, idempotency, durable ledger/outbox/workers, retries, DLQ/replay, reconciliation, audit and policy. This repository does not duplicate those capabilities.
 
-## Environments
+This adapter owns only provider-specific concerns:
 
-Development -> integration certification -> isolated staging -> production approval.
+- Meta Cloud API / Evolution-Baileys request translation
+- instance/session identifiers
+- provider message IDs
+- webhook verification/parsing
+- delivery/read normalization
+- provider health/readiness
+- provider-specific telemetry hooks
 
-Production is fail-closed until exact-head CI, security, observability, rollback and staging acceptance evidence are green.
+Public/business callers never use provider endpoints directly.
 
-## Branding and licensing
+## Safe defaults
 
-Codestra-owned product surfaces use Codestra naming. Required third-party copyright, license, NOTICE, model/license attribution and provenance must be preserved.
+`EXTERNAL_SEND_ENABLED=false` and `FORWARD_EVENTS_ENABLED=false` by default.
+
+## Run
+
+```powershell
+node src/server.mjs
+node --test
+```
+
+See `.env.example` and `openapi.yaml`.

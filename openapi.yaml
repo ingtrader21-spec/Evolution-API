@@ -1,0 +1,36 @@
+﻿openapi: 3.1.0
+info:
+  title: Codestra Evolution Provider Adapter
+  version: 0.1.0
+  description: Internal provider adapter behind Middleware V3. Not a public command API.
+paths:
+  /healthz:
+    get:
+      responses:
+        "200": { description: Healthy }
+  /readyz:
+    get:
+      responses:
+        "200": { description: Ready in safe mode or configured provider mode }
+  /internal/v1/whatsapp/transport/health:
+    get:
+      responses:
+        "200": { description: Provider configuration status }
+  /internal/v1/whatsapp/transport/messages:
+    post:
+      description: Internal Middleware-to-provider translation. External send is disabled by default.
+      responses:
+        "202": { description: Provider accepted }
+        "423": { description: Provider effects disabled }
+  /internal/v1/whatsapp/webhooks/evolution:
+    post:
+      responses:
+        "202": { description: Provider event normalized }
+  /internal/v1/whatsapp/webhooks/meta:
+    get:
+      responses:
+        "200": { description: Meta webhook verification challenge }
+        "403": { description: Verification failed }
+    post:
+      responses:
+        "202": { description: Meta event normalized }
