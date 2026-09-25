@@ -1,4 +1,4 @@
-﻿import test from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createApp } from "../src/server.mjs";
@@ -19,6 +19,21 @@ test("health reports Middleware V3 provider-adapter architecture", async () => {
     const body = await res.json();
     assert.equal(body.architecture, "middleware-v3-provider-adapter");
     assert.equal(body.external_send_enabled, false);
+  });
+});
+
+test("internal transport health requires service authentication", async () => {
+  await withServer(async (base) => {
+    const denied = await fetch(base + "/internal/v1/whatsapp/transport/health");
+    assert.equal(denied.status, 401);
+    assert.equal((await denied.json()).error.code, "service_auth_required");
+
+    const allowed = await fetch(base + "/internal/v1/whatsapp/transport/health", {
+      headers: { authorization: "Bearer test-service-token" }
+    });
+    assert.equal(allowed.status, 200);
+    const body = await allowed.json();
+    assert.equal(body.middleware_v3_authority, true);
   });
 });
 

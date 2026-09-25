@@ -1,4 +1,4 @@
-﻿import http from "node:http";
+import http from "node:http";
 import { loadConfig } from "./config.mjs";
 import { ProviderError, requireString } from "./contracts.mjs";
 import { createEvolutionProvider } from "./providers/evolution.mjs";
@@ -111,6 +111,8 @@ export function createApp(customConfig = loadConfig()) {
       }
 
       if (req.method === "GET" && url.pathname === "/internal/v1/whatsapp/transport/health") {
+        const authError = internalAuthError(req, customConfig);
+        if (authError) return json(res, authError.status, { error: { code: authError.code } });
         return json(res, 200, {
           middleware_v3_authority: true,
           provider_adapter_only: true,

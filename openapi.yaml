@@ -15,10 +15,13 @@ paths:
         "503": { description: Fail-closed readiness problem }
   /internal/v1/whatsapp/transport/health:
     get:
+      security: [{ serviceBearer: [] }]
       responses:
         "200": { description: Provider configuration status }
+        "401": { description: Service authentication failed }
   /internal/v1/whatsapp/transport/messages/{provider_message_id}:
     get:
+      security: [{ serviceBearer: [] }]
       description: Internal provider message readback for Middleware V3.
       parameters:
         - in: path
@@ -31,6 +34,7 @@ paths:
         "404": { description: Provider message not found }
   /internal/v1/whatsapp/transport/messages:
     post:
+      security: [{ serviceBearer: [] }]
       description: Internal Middleware-to-provider translation. Header/body identifiers must match exactly.
       parameters:
         - { name: X-Command-ID, in: header, required: true, schema: { type: string } }
@@ -56,3 +60,11 @@ paths:
     post:
       responses:
         "202": { description: Meta event normalized }
+
+components:
+  securitySchemes:
+    serviceBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque-service-token
+      description: Internal Middleware-to-adapter service bearer token.
