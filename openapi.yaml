@@ -41,6 +41,19 @@ paths:
         - { name: X-Tenant-ID, in: header, required: true, schema: { type: string } }
         - { name: X-Correlation-ID, in: header, required: true, schema: { type: string } }
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [command_id, tenant_id, correlation_id, idempotency_key, campaign_id]
+              properties:
+                command_id: { type: string }
+                tenant_id: { type: string }
+                correlation_id: { type: string }
+                idempotency_key: { type: string }
+                campaign_id: { type: string }
       responses:
         "202": { description: Provider accepted }
         "400": { description: Missing required identifiers or invalid JSON }
